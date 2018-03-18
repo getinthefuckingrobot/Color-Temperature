@@ -1,3 +1,7 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
 def alphablend(color, tmpColor, tempStrength):
     return color * (1-tempStrength) + tmpColor * tempStrength
 
@@ -29,32 +33,15 @@ def colorTransform(tmpK):
 
     return [red, green, blue]
 
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
+def colorTemperature(img, temperature):
+    tmpColor = np.array(colorTransform(temperature))
 
-img = cv2.imread('train_poor_set/1/1.jpg')
-rows, cols, ch = img.shape
+    img_hls = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
 
-tmpColor = colorTransform(1400)
+    updatedColor = np.array(alphablend(img, tmpColor, 0.5), dtype='uint8')
 
-img1 = img.copy()
+    updatedColor_hls = cv2.cvtColor(updatedColor, cv2.COLOR_RGB2HLS)
+    updatedColor_hls[:,:,1] = img_hls[:,:,1]
+    updatedColor = cv2.cvtColor(updatedColor_hls, cv2.COLOR_HLS2RGB)
 
-for i in range(rows):
-    for j in range(cols):
-        color = np.copy(img[i,j])
-        lum = int((int(max(color))+int(min(color)))/2)
-        for k in [0,1,2]:
-            color[k] = alphablend(color[k], tmpColor[k], 0.5)
-        updatedColor = np.array([[color]])
-        updatedColor_hls = cv2.cvtColor(updatedColor, cv2.COLOR_RGB2HLS)
-        updatedColor_hls[0,0,1] = lum
-        updatedColor = cv2.cvtColor(updatedColor_hls, cv2.COLOR_HLS2RGB)
-
-        img1[i,j] = updatedColor
-
-
-plt.imshow(img),plt.title('Input'), plt.figure(figsize=(6, 6), dpi=100)
-plt.imshow(img1),plt.title('Output'), plt.figure(figsize=(6, 6), dpi=100)
-
-plt.show()
+    return updatedColor
